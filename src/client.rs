@@ -3,12 +3,12 @@ use std::net::{SocketAddr, TcpStream, UdpSocket};
 use std::time::Duration;
 
 use crate::error::{QtmError, Result};
-use crate::packet::{decode_packet, parse_framed_packet, DataPacket, Packet};
-use crate::parameters::{parse_mocap_parameters_xml, MocapParameters};
+use crate::packet::{DataPacket, Packet, decode_packet, parse_framed_packet};
+use crate::parameters::{MocapParameters, parse_mocap_parameters_xml};
 use crate::protocol::{
-    build_get_current_frame_command, build_get_parameters_command, build_version_command,
-    ComponentSelection, PacketType, ParameterSelection, ProtocolVersion, StreamFramesRequest,
-    INITIAL_GREETING, LITTLE_ENDIAN_PORT,
+    ComponentSelection, INITIAL_GREETING, LITTLE_ENDIAN_PORT, PacketType, ParameterSelection,
+    ProtocolVersion, StreamFramesRequest, build_get_current_frame_command,
+    build_get_parameters_command, build_version_command,
 };
 
 #[derive(Debug, Clone, Copy)]

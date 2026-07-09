@@ -9,6 +9,6 @@ keywords = ["qualisys", "qtm", "motion-capture", "sdk", "udp"]
 categories = ["network-programming", "science::robotics"]
 
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.5", features = ["derive", "env"] }
 roxmltree = "0.20"
 thiserror = "2.0"

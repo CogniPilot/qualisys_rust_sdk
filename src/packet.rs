@@ -406,6 +406,160 @@ pub fn decode_packet(packet_type: PacketType, payload: &[u8]) -> Result<Packet> 
     }
 }
 
+pub fn encode_framed_packet(packet_type: PacketType, payload: &[u8]) -> Result<Vec<u8>> {
+    let total_len = 8usize
+        .checked_add(payload.len())
+        .ok_or_else(|| QtmError::invalid_packet("packet length overflow"))?;
+    let total_len = u32::try_from(total_len)
+        .map_err(|_| QtmError::invalid_packet("packet length does not fit u32"))?;
+
+    let mut bytes = Vec::with_capacity(total_len as usize);
+    bytes.extend_from_slice(&total_len.to_le_bytes());
+    bytes.extend_from_slice(&(packet_type as u32).to_le_bytes());
+    bytes.extend_from_slice(payload);
+    Ok(bytes)
+}
+
+pub fn encode_text_packet(packet_type: PacketType, text: &str) -> Result<Vec<u8>> {
+    let mut payload = Vec::with_capacity(text.len() + 1);
+    payload.extend_from_slice(text.as_bytes());
+    payload.push(0);
+    encode_framed_packet(packet_type, &payload)
+}
+
+pub fn encode_data_packet(packet: &DataPacket) -> Result<Vec<u8>> {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&packet.timestamp.to_le_bytes());
+    payload.extend_from_slice(&packet.frame_number.to_le_bytes());
+    payload.extend_from_slice(
+        &u32::try_from(packet.components.len())
+            .map_err(|_| QtmError::invalid_packet("component count does not fit u32"))?
+            .to_le_bytes(),
+    );
+
+    for component in &packet.components {
+        let component_payload = encode_component_data(&component.data)?;
+        let component_size = 8usize
+            .checked_add(component_payload.len())
+            .ok_or_else(|| QtmError::invalid_packet("component length overflow"))?;
+        let component_size = u32::try_from(component_size)
+            .map_err(|_| QtmError::invalid_packet("component length does not fit u32"))?;
+        payload.extend_from_slice(&component_size.to_le_bytes());
+        payload.extend_from_slice(&component.id.to_le_bytes());
+        payload.extend_from_slice(&component_payload);
+    }
+
+    encode_framed_packet(PacketType::Data, &payload)
+}
+
+fn encode_component_data(data: &ComponentData) -> Result<Vec<u8>> {
+    let mut bytes = Vec::new();
+    match data {
+        ComponentData::ThreeD(component) => {
+            bytes.extend_from_slice(
+                &u32::try_from(component.markers.len())
+                    .map_err(|_| QtmError::invalid_packet("3D marker count does not fit u32"))?
+                    .to_le_bytes(),
+            );
+            bytes.extend_from_slice(&component.drop_rate.to_le_bytes());
+            bytes.extend_from_slice(&component.out_of_sync_rate.to_le_bytes());
+            for marker in &component.markers {
+                write_point3(&mut bytes, marker);
+            }
+        }
+        ComponentData::ThreeDNoLabels(component) => {
+            bytes.extend_from_slice(
+                &u32::try_from(component.markers.len())
+                    .map_err(|_| QtmError::invalid_packet("3D marker count does not fit u32"))?
+                    .to_le_bytes(),
+            );
+            bytes.extend_from_slice(&component.drop_rate.to_le_bytes());
+            bytes.extend_from_slice(&component.out_of_sync_rate.to_le_bytes());
+            for marker in &component.markers {
+                bytes.extend_from_slice(&marker.x.to_le_bytes());
+                bytes.extend_from_slice(&marker.y.to_le_bytes());
+                bytes.extend_from_slice(&marker.z.to_le_bytes());
+                bytes.extend_from_slice(&marker.id.to_le_bytes());
+            }
+        }
+        ComponentData::SixD(component) => {
+            bytes.extend_from_slice(
+                &i32::try_from(component.bodies.len())
+                    .map_err(|_| QtmError::invalid_packet("6D body count does not fit i32"))?
+                    .to_le_bytes(),
+            );
+            bytes.extend_from_slice(&component.drop_rate.to_le_bytes());
+            bytes.extend_from_slice(&component.out_of_sync_rate.to_le_bytes());
+            for body in &component.bodies {
+                write_point3(&mut bytes, &body.position);
+                for value in body.rotation_matrix {
+                    bytes.extend_from_slice(&value.to_le_bytes());
+                }
+            }
+        }
+        ComponentData::SixDResidual(component) => {
+            bytes.extend_from_slice(
+                &i32::try_from(component.bodies.len())
+                    .map_err(|_| QtmError::invalid_packet("6D body count does not fit i32"))?
+                    .to_le_bytes(),
+            );
+            bytes.extend_from_slice(&component.drop_rate.to_le_bytes());
+            bytes.extend_from_slice(&component.out_of_sync_rate.to_le_bytes());
+            for body in &component.bodies {
+                write_point3(&mut bytes, &body.position);
+                for value in body.rotation_matrix {
+                    bytes.extend_from_slice(&value.to_le_bytes());
+                }
+                bytes.extend_from_slice(&body.residual.to_le_bytes());
+            }
+        }
+        ComponentData::SixDEuler(component) => {
+            bytes.extend_from_slice(
+                &i32::try_from(component.bodies.len())
+                    .map_err(|_| QtmError::invalid_packet("6D body count does not fit i32"))?
+                    .to_le_bytes(),
+            );
+            bytes.extend_from_slice(&component.drop_rate.to_le_bytes());
+            bytes.extend_from_slice(&component.out_of_sync_rate.to_le_bytes());
+            for body in &component.bodies {
+                write_point3(&mut bytes, &body.position);
+                for value in body.euler {
+                    bytes.extend_from_slice(&value.to_le_bytes());
+                }
+            }
+        }
+        ComponentData::SixDEulerResidual(component) => {
+            bytes.extend_from_slice(
+                &i32::try_from(component.bodies.len())
+                    .map_err(|_| QtmError::invalid_packet("6D body count does not fit i32"))?
+                    .to_le_bytes(),
+            );
+            bytes.extend_from_slice(&component.drop_rate.to_le_bytes());
+            bytes.extend_from_slice(&component.out_of_sync_rate.to_le_bytes());
+            for body in &component.bodies {
+                write_point3(&mut bytes, &body.position);
+                for value in body.euler {
+                    bytes.extend_from_slice(&value.to_le_bytes());
+                }
+                bytes.extend_from_slice(&body.residual.to_le_bytes());
+            }
+        }
+        ComponentData::Raw(raw) => bytes.extend_from_slice(raw),
+        other => {
+            return Err(QtmError::invalid_packet(format!(
+                "encoding {other:?} is not implemented"
+            )));
+        }
+    }
+    Ok(bytes)
+}
+
+fn write_point3(bytes: &mut Vec<u8>, point: &Point3) {
+    bytes.extend_from_slice(&point.x.to_le_bytes());
+    bytes.extend_from_slice(&point.y.to_le_bytes());
+    bytes.extend_from_slice(&point.z.to_le_bytes());
+}
+
 fn parse_string_payload(payload: &[u8]) -> Result<String> {
     let payload = payload.strip_suffix(&[0]).unwrap_or(payload);
     String::from_utf8(payload.to_vec()).map_err(Into::into)
@@ -977,9 +1131,9 @@ fn read_fixed<const N: usize>(bytes: &[u8], offset: usize) -> Result<[u8; N]> {
     let slice = bytes
         .get(offset..end)
         .ok_or_else(|| QtmError::invalid_packet("buffer too short"))?;
-    Ok(slice
+    slice
         .try_into()
-        .map_err(|_| QtmError::invalid_packet("buffer had unexpected length"))?)
+        .map_err(|_| QtmError::invalid_packet("buffer had unexpected length"))
 }
 
 fn to_usize(value: u32) -> Result<usize> {

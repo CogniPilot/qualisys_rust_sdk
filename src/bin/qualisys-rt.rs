@@ -5,8 +5,8 @@ use std::time::Duration;
 use clap::{Parser, Subcommand, ValueEnum};
 use qualisys_rust_sdk::rt::{
     AssembledFrame, Client, ClientOptions, Component, ComponentData, ComponentSelection,
-    ComponentType, DataPacket, FrameAccumulator, ParameterSelection, ProtocolVersion,
-    StreamFramesRequest, StreamPacket, StreamRate, StreamTransport, LITTLE_ENDIAN_PORT,
+    ComponentType, DataPacket, FrameAccumulator, LITTLE_ENDIAN_PORT, ParameterSelection,
+    ProtocolVersion, StreamFramesRequest, StreamPacket, StreamRate, StreamTransport,
 };
 
 type CliResult<T> = Result<T, Box<dyn Error>>;
