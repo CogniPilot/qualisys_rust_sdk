@@ -23,18 +23,22 @@ pub mod protocol {
 pub use crate::bridge::{AssembledFrame, BytePublisher, FrameAccumulator, FrameEncoder, FrameSink};
 pub use crate::client::{ConnectOptions, QtmClient, StreamPacket};
 pub use crate::error::{QtmError, Result};
-pub use crate::packet::{Component, ComponentData, DataPacket, Packet, PacketHeader};
+pub use crate::packet::{
+    Component, ComponentData, DataPacket, Packet, PacketHeader, encode_data_packet,
+    encode_framed_packet,
+};
 pub use crate::parameters::{
-    parse_mocap_parameters_xml, MocapParameters, MocapRigidBody, MocapRigidBodyPoint,
-    MocapSixDParameters, MocapSkeleton, MocapSkeletonMarker, MocapSkeletonParameters,
-    MocapSkeletonRigidBody, MocapSkeletonSegment, MocapThreeDBone, MocapThreeDLabel,
-    MocapThreeDParameters, MocapTransform,
+    MocapParameters, MocapRigidBody, MocapRigidBodyPoint, MocapSixDParameters, MocapSkeleton,
+    MocapSkeletonMarker, MocapSkeletonParameters, MocapSkeletonRigidBody, MocapSkeletonSegment,
+    MocapThreeDBone, MocapThreeDLabel, MocapThreeDParameters, MocapTransform,
+    parse_mocap_parameters_xml,
 };
 pub use crate::protocol::{
-    ComponentSelection, ComponentType, Event, PacketType, ParameterSelection, ProtocolVersion,
-    StreamFramesRequest, StreamRate, StreamTransport, BASE_PORT, BIG_ENDIAN_PORT, INITIAL_GREETING,
-    LATEST_PROTOCOL_VERSION, LITTLE_ENDIAN_PORT,
+    BASE_PORT, BIG_ENDIAN_PORT, ComponentSelection, ComponentType, Event, INITIAL_GREETING,
+    LATEST_PROTOCOL_VERSION, LITTLE_ENDIAN_PORT, PacketType, ParameterSelection, ProtocolVersion,
+    StreamFramesRequest, StreamRate, StreamTransport,
 };
+pub use crate::simulator::{QtmSimulator, SimulatorOptions};
 
 pub type Client = crate::client::QtmClient;
 pub type ClientOptions = crate::client::ConnectOptions;

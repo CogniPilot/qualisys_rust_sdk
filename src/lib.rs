@@ -6,6 +6,7 @@ mod error;
 mod packet;
 mod parameters;
 mod protocol;
+pub mod simulator;
 
 pub mod prelude;
 pub mod rt;

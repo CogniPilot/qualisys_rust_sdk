@@ -34,9 +34,12 @@ parity with `qualisys_cpp_sdk` over time.
 
 ## Diagnostic CLI
 
-The crate includes a `qualisys-rt` binary for basic QTM RT diagnostics:
+The crate includes a `qualisys-rt` binary for basic QTM RT diagnostics and a
+`qualisys-sim` binary that serves synthetic RT frames when motion capture
+hardware is not present:
 
 ```sh
+cargo run --bin qualisys-sim -- --bind 127.0.0.1:22223 --hz 240
 cargo run --bin qualisys-rt -- info --host 192.168.1.10
 cargo run --bin qualisys-rt -- params --host 192.168.1.10 --parameters general,3d,6d,skeleton
 cargo run --bin qualisys-rt -- frame --host 192.168.1.10 --components 6d
